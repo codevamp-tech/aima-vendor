@@ -3,19 +3,27 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
+import { apiUrl, BASE_PATH } from '@/lib/api-path';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const router   = useRouter();
+  const router = useRouter();
   const pathname = usePathname();
 
   // Login page — render children only, no shell at all
-  if (pathname === '/admin/login') {
+  if (pathname === `/admin/login`) {
+
     return <>{children}</>;
   }
+  console.log("pathname", pathname);
 
   async function handleLogout() {
-    await fetch('/api/admin/logout', { method: 'POST' });
-    router.push('/admin/login');
+    // Clear the cookie client-side immediately as a reliable fallback
+    document.cookie = 'admin_session=; Path=/; Max-Age=0; SameSite=Lax';
+    // Also tell the server to invalidate
+    try {
+      await fetch(apiUrl('/api/admin/logout'), { method: 'POST' });
+    } catch { /* ignore if API unreachable */ }
+    router.push(`/admin/login`);
     router.refresh();
   }
 

@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import Image from 'next/image';
+import { apiUrl } from '@/lib/api-path';
 
 /* =========================================================
    TYPES
@@ -45,7 +46,7 @@ function SmartUploadZone({
       fd.append('docType', docType);
 
       try {
-        const res = await fetch('/api/scan-document', {
+        const res = await fetch(apiUrl('/api/scan-document'), {
           method: 'POST',
           body: fd,
         });
@@ -367,7 +368,7 @@ export default function VendorRegistration() {
     setOtpLoading(true);
     setOtpError('');
     try {
-      const res = await fetch('/api/send-otp', {
+      const res = await fetch(apiUrl('/api/send-otp'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailValue }),
@@ -395,7 +396,7 @@ export default function VendorRegistration() {
     setOtpLoading(true);
     setOtpError('');
     try {
-      const res = await fetch('/api/verify-otp', {
+      const res = await fetch(apiUrl('/api/verify-otp'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailValue, otp: otpValue }),
@@ -440,7 +441,7 @@ export default function VendorRegistration() {
     const formData = new FormData(form);
 
     try {
-      const res = await fetch('/api/register', {
+      const res = await fetch(apiUrl('/api/register'), {
         method: 'POST',
         body: formData,
       });

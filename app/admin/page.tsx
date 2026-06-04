@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { apiUrl } from '@/lib/api-path';
 
 /* ── Types ───────────────────────────────────────────────── */
 interface Vendor {
@@ -52,6 +53,7 @@ export default function AdminPage() {
   const [page,       setPage]       = useState(1);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState('');
+  const [exporting,  setExporting]  = useState(false);
 
   /* ── Fetch ───────────────────────────────────────────────── */
   const fetchVendors = useCallback(async (
@@ -70,7 +72,7 @@ export default function AdminPage() {
         ...(filters.dateFrom && { date_from: filters.dateFrom }),
         ...(filters.dateTo   && { date_to:   filters.dateTo }),
       });
-      const res = await fetch(`/api/admin/vendors?${qs}`);
+      const res = await fetch(apiUrl(`/api/admin/vendors?${qs}`));
       if (!res.ok) throw new Error('Failed to fetch');
       const data: ApiResponse = await res.json();
       setVendors(data.vendors);
@@ -109,6 +111,32 @@ export default function AdminPage() {
     if (p < 1 || p > totalPages) return;
     fetchVendors(p, committed);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const qs = new URLSearchParams({
+        ...(committed.company  && { company:   committed.company }),
+        ...(committed.pan      && { pan:       committed.pan }),
+        ...(committed.gstin    && { gstin:     committed.gstin }),
+        ...(committed.dateFrom && { date_from: committed.dateFrom }),
+        ...(committed.dateTo   && { date_to:   committed.dateTo }),
+      });
+      const res = await fetch(apiUrl(`/api/admin/export?${qs}`));
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `aima-vendors-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Export failed. Please try again.');
+    } finally {
+      setExporting(false);
+    }
   }
 
   /* ── Pagination meta ─────────────────────────────────────── */
@@ -166,6 +194,22 @@ export default function AdminPage() {
               Click on any vendor to view full details
             </p>
           </div>
+          <button
+            onClick={handleExport}
+            disabled={exporting || loading}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.4rem',
+              padding: '0.5rem 1.1rem',
+              background: exporting ? 'rgba(5,150,105,0.1)' : 'linear-gradient(135deg,#059669,#047857)',
+              color: exporting ? '#059669' : '#fff',
+              border: exporting ? '1.5px solid rgba(5,150,105,0.3)' : 'none',
+              borderRadius: '8px', fontFamily: 'inherit',
+              fontSize: '0.82rem', fontWeight: 600, cursor: exporting ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s ease', boxShadow: exporting ? 'none' : '0 2px 8px rgba(5,150,105,0.3)',
+            }}
+          >
+            {exporting ? '⏳ Exporting…' : '⬇ Export to Excel'}
+          </button>
         </div>
 
         {/* ── Search bar ── */}

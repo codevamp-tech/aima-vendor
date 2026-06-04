@@ -5,27 +5,34 @@ import { verifyToken, COOKIE_NAME } from '@/lib/auth';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow the login page and auth APIs to pass through freely
+  // ── Allow login & auth APIs through regardless of base path ──
   if (
-    pathname.startsWith('/admin/login') ||
-    pathname.startsWith('/api/admin/login') ||
-    pathname.startsWith('/api/admin/logout')
+    pathname.endsWith('/admin/login') ||
+    pathname.includes('/api/admin/login') ||
+    pathname.includes('/api/admin/logout')
   ) {
     return NextResponse.next();
   }
 
-  // Protect all /admin routes
-  if (pathname.startsWith('/admin')) {
+  // ── Protect any route that contains /admin ───────────────────
+  // Uses .includes() so it works for both /admin and /account/admin
+  // without depending on the BASE env var being set at startup time.
+  if (pathname.includes('/admin')) {
     const token = request.cookies.get(COOKIE_NAME)?.value;
 
     if (!token) {
-      const loginUrl = new URL('/admin/login', request.url);
+      // Derive login URL from current pathname so basePath is preserved:
+      //   /admin/anything        → /admin/login
+      //   /account/admin/anything → /account/admin/login
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = pathname.replace(/\/admin.*$/, '/admin/login');
       return NextResponse.redirect(loginUrl);
     }
 
     const payload = await verifyToken(token);
     if (!payload) {
-      const loginUrl = new URL('/admin/login', request.url);
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = pathname.replace(/\/admin.*$/, '/admin/login');
       return NextResponse.redirect(loginUrl);
     }
   }
@@ -34,5 +41,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  // Matches: /admin, /admin/*, /account/admin, /account/admin/*
+  matcher: ['/(account/)?admin(.*)'],
 };
