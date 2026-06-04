@@ -41,6 +41,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Matches: /admin, /admin/*, /account/admin, /account/admin/*
-  matcher: ['/(account/)?admin(.*)'],
+  // basePath is implicitly stripped by Next.js, so we match against the internal path
+  matcher: ['/admin', '/admin/:path*'],
 };
