@@ -1,8 +1,14 @@
 const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
+const { loadEnvConfig } = require('@next/env');
 
-// Set the environment to production by default if not specified
+// Load environment variables from .env.production exactly like Next.js CLI does
+const projectDir = process.cwd();
+loadEnvConfig(projectDir);
+
+// Force production mode explicitly so it runs the built code
+process.env.NODE_ENV = process.env.NODE_ENV || 'production';
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
 const port = process.env.PORT || 3000;
@@ -10,6 +16,13 @@ const port = process.env.PORT || 3000;
 // Initialize the Next.js application
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
+
+// Console logs to verify environment variables are loading!
+console.log('--- Environment Variables Check ---');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('NEXT_PUBLIC_BASE_PATH:', process.env.NEXT_PUBLIC_BASE_PATH || '(not set)');
+console.log('DB_HOST:', process.env.DB_HOST || '(not set)');
+console.log('-----------------------------------');
 
 app.prepare().then(() => {
   createServer(async (req, res) => {
