@@ -17,13 +17,6 @@ const port = process.env.PORT || 3000;
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
-// Console logs to verify environment variables are loading!
-console.log('--- Environment Variables Check ---');
-console.log('NODE_ENV:', process.env.NODE_ENV);
-console.log('NEXT_PUBLIC_BASE_PATH:', process.env.NEXT_PUBLIC_BASE_PATH || '(not set)');
-console.log('DB_HOST:', process.env.DB_HOST || '(not set)');
-console.log('-----------------------------------');
-
 app.prepare().then(() => {
   createServer(async (req, res) => {
     try {
