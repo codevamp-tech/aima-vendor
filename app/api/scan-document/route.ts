@@ -47,6 +47,15 @@ Extract the following fields and return ONLY a valid JSON object (no markdown, n
   "panHolderDOB": "Date of birth YYYY-MM-DD if visible, else empty string"
 }`;
 
+const MSME_PROMPT = `You are an OCR expert for Indian MSME / Udyam Registration Certificates.
+Extract the following fields and return ONLY a valid JSON object (no markdown, no backticks):
+{
+  "msmeNumber": "Udyam Registration Number e.g. UDYAM-XX-00-0000000",
+  "enterpriseName": "Name of Enterprise exactly as on certificate",
+  "udyamDate": "Date of Udyam Registration YYYY-MM-DD if visible, else empty string",
+  "msmeCategory": "One of: Micro, Small, Medium"
+}`;
+
 // ─── Gemini REST helper ───────────────────────────────────────────────────────
 
 interface GeminiPart {
@@ -102,9 +111,9 @@ function parseJSON(raw: string): Record<string, string> {
 async function extractFromImage(
   buffer: Buffer,
   mimeType: string,
-  docType: 'gst' | 'pan'
+  docType: 'gst' | 'pan' | 'msme'
 ): Promise<Record<string, string>> {
-  const prompt = docType === 'gst' ? GST_PROMPT : PAN_PROMPT;
+  const prompt = docType === 'gst' ? GST_PROMPT : docType === 'pan' ? PAN_PROMPT : MSME_PROMPT;
   const text = await callGemini([
     { text: prompt },
     { inlineData: { mimeType, data: buffer.toString('base64') } },
@@ -114,9 +123,9 @@ async function extractFromImage(
 
 async function extractFromPDF(
   buffer: Buffer,
-  docType: 'gst' | 'pan'
+  docType: 'gst' | 'pan' | 'msme'
 ): Promise<Record<string, string>> {
-  const prompt = docType === 'gst' ? GST_PROMPT : PAN_PROMPT;
+  const prompt = docType === 'gst' ? GST_PROMPT : docType === 'pan' ? PAN_PROMPT : MSME_PROMPT;
   // Gemini 1.5 Flash supports PDF via inlineData
   const text = await callGemini([
     { text: prompt },
@@ -127,12 +136,12 @@ async function extractFromPDF(
 
 async function extractFromDOCX(
   buffer: Buffer,
-  docType: 'gst' | 'pan'
+  docType: 'gst' | 'pan' | 'msme'
 ): Promise<Record<string, string>> {
   const mammoth = await import('mammoth');
   const { value: docText } = await mammoth.extractRawText({ buffer });
 
-  const prompt = docType === 'gst' ? GST_PROMPT : PAN_PROMPT;
+  const prompt = docType === 'gst' ? GST_PROMPT : docType === 'pan' ? PAN_PROMPT : MSME_PROMPT;
   const text = await callGemini([
     { text: `${prompt}\n\nDocument text:\n${docText.substring(0, 8000)}` },
   ]);
@@ -145,7 +154,7 @@ export async function POST(req: Request) {
   try {
     const formData = await req.formData();
     const file     = formData.get('file') as File | null;
-    const docType  = ((formData.get('docType') as string) || 'gst') as 'gst' | 'pan';
+    const docType  = ((formData.get('docType') as string) || 'gst') as 'gst' | 'pan' | 'msme';
 
     if (!file || file.size === 0) {
       return NextResponse.json({ success: false, error: 'No file provided' }, { status: 400 });

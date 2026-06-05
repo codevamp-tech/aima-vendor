@@ -44,7 +44,7 @@ export async function GET(request: Request) {
          trade_name               AS "Trade Name",
          business_type            AS "Business Type",
          industry_category        AS "Industry Category",
-         company_registration_no  AS "Company Reg. No.",
+         company_registration_number  AS "Company Reg. No.",
          date_of_incorporation    AS "Date of Incorporation",
          company_website          AS "Website",
          primary_contact_name     AS "Contact Name",

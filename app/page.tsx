@@ -11,7 +11,7 @@ type ScanState = 'idle' | 'scanning' | 'success' | 'error' | 'no-api';
 
 interface SmartUploadProps {
   name: string;
-  docType: 'gst' | 'pan';
+  docType: 'gst' | 'pan' | 'msme';
   label: string;
   required?: boolean;
   onScanComplete: (data: Record<string, string>) => void;
@@ -128,7 +128,7 @@ function SmartUploadZone({
           <div className="scan-overlay">
             <div className="scan-spinner" />
             <div className="scan-label">🔍 Scanning Document…</div>
-            <div className="scan-sublabel">Gemini AI is reading your {docType === 'gst' ? 'GST Certificate' : 'PAN Card'}</div>
+            <div className="scan-sublabel">Gemini AI is reading your {docType === 'gst' ? 'GST Certificate' : docType === 'pan' ? 'PAN Card' : 'MSME Certificate'}</div>
           </div>
         )}
 
@@ -143,7 +143,7 @@ function SmartUploadZone({
             </>
           ) : (
             <>
-              <div className="upload-icon">{docType === 'gst' ? '🏛️' : '💳'}</div>
+              <div className="upload-icon">{docType === 'gst' ? '🏛️' : docType === 'pan' ? '💳' : '🏭'}</div>
               <div>
                 <span className="smart-badge">⚡ Smart Scan</span>
               </div>
@@ -283,6 +283,8 @@ export default function VendorRegistration() {
   const [gstScanState, setGstScanState] = useState<ScanState>('idle');
   // Auto-fill state (PAN)
   const [panScanState, setPanScanState] = useState<ScanState>('idle');
+  // Auto-fill state (MSME)
+  const [msmeScanState, setMsmeScanState] = useState<ScanState>('idle');
 
   // Form field refs for auto-fill
   const refs = {
@@ -295,6 +297,10 @@ export default function VendorRegistration() {
     businessType: useRef<HTMLSelectElement>(null),
     panNumber: useRef<HTMLInputElement>(null),
     primaryContactName: useRef<HTMLInputElement>(null),
+    msmeNumber: useRef<HTMLInputElement>(null),
+    enterpriseName: useRef<HTMLInputElement>(null),
+    udyamDate: useRef<HTMLInputElement>(null),
+    msmeCategory: useRef<HTMLSelectElement>(null),
   };
 
   const fillField = (ref: React.RefObject<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null>, value: string) => {
@@ -356,6 +362,23 @@ export default function VendorRegistration() {
     if (data.panHolderName && refs.primaryContactName.current) {
       const cur = refs.primaryContactName.current.value;
       if (!cur) fillField(refs.primaryContactName, data.panHolderName);
+    }
+  }, []);
+
+  const handleMSMEScan = useCallback((data: Record<string, string>) => {
+    if (data.msmeNumber) fillField(refs.msmeNumber, data.msmeNumber);
+    if (data.enterpriseName) fillField(refs.enterpriseName, data.enterpriseName);
+    if (data.udyamDate) fillField(refs.udyamDate, data.udyamDate);
+
+    // Map msme category
+    if (data.msmeCategory && refs.msmeCategory.current) {
+      const sel = refs.msmeCategory.current;
+      const lower = data.msmeCategory.toLowerCase();
+      const match = Array.from(sel.options).find(o => o.value && lower.includes(o.value.toLowerCase()));
+      if (match) {
+        sel.value = match.value;
+        sel.classList.add('auto-filled');
+      }
     }
   }, []);
 
@@ -924,6 +947,7 @@ export default function VendorRegistration() {
                       <div className="form-group">
                         <label className="form-label">Udyam / MSME Registration Number <span className="required">*</span></label>
                         <input
+                          ref={refs.msmeNumber}
                           type="text"
                           name="msmeNumber"
                           className="form-control"
@@ -935,6 +959,7 @@ export default function VendorRegistration() {
                       <div className="form-group">
                         <label className="form-label">Enterprise Name <span className="required">*</span></label>
                         <input
+                          ref={refs.enterpriseName}
                           type="text"
                           name="enterpriseName"
                           className="form-control"
@@ -945,12 +970,12 @@ export default function VendorRegistration() {
 
                       <div className="form-group">
                         <label className="form-label">Udyam Registration Date <span className="required">*</span></label>
-                        <input type="date" name="udyamDate" className="form-control" required />
+                        <input ref={refs.udyamDate} type="date" name="udyamDate" className="form-control" required />
                       </div>
 
                       <div className="form-group">
                         <label className="form-label">MSME Category <span className="required">*</span></label>
-                        <select name="msmeCategory" className="form-select" required>
+                        <select ref={refs.msmeCategory} name="msmeCategory" className="form-select" required>
                           <option value="">Select Category</option>
                           <option>Micro</option>
                           <option>Small</option>
@@ -959,8 +984,25 @@ export default function VendorRegistration() {
                       </div>
 
                       <div className="form-group full-width">
-                        <label className="form-label">Upload MSME / Udyam Certificate <span className="required">*</span></label>
-                        <UploadZone name="msmeFile" label="Drop MSME Certificate here" required />
+                        <label className="form-label">
+                          Upload MSME / Udyam Certificate <span className="required">*</span>
+                          <span style={{ marginLeft: '0.5rem', fontSize: '0.72rem', color: 'var(--aima-gold-dark)', fontWeight: 400 }}>
+                            ⚡ Smart AI Scan
+                          </span>
+                        </label>
+                        <SmartUploadZone
+                          name="msmeFile"
+                          docType="msme"
+                          label="Drop MSME Certificate here (Image / PDF / DOCX)"
+                          required
+                          onScanComplete={handleMSMEScan}
+                          onScanStatus={setMsmeScanState}
+                        />
+                        {msmeScanState === 'idle' && (
+                          <div className="info-tip">
+                            💡 Upload your MSME certificate to auto-fill the details above
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
