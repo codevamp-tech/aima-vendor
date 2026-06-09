@@ -262,6 +262,10 @@ const INDIAN_STATES = [
 export default function VendorRegistration() {
   const [msmeRegistered, setMsmeRegistered] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGstRegistered, setIsGstRegistered] = useState('yes');
+  const [hasPanCard, setHasPanCard] = useState('yes');
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Email OTP state
   const [emailValue, setEmailValue] = useState('');
@@ -338,14 +342,14 @@ export default function VendorRegistration() {
         'proprietorship': 'Proprietorship',
         'proprietor': 'Proprietorship',
         'sole': 'Proprietorship',
-        'partnership': 'Partnership',
-        'private limited': 'Private Limited',
-        'private': 'Private Limited',
-        'pvt': 'Private Limited',
+        'partnership': 'Partnership Firm',
+        'private limited': 'Private Limited Company',
+        'private': 'Private Limited Company',
+        'pvt': 'Private Limited Company',
         'llp': 'LLP',
         'limited liability': 'LLP',
-        'public limited': 'Public Limited',
-        'public': 'Public Limited',
+        'public limited': 'Public Limited Company',
+        'public': 'Public Limited Company',
       };
       const lower = data.businessType.toLowerCase();
       const found = Object.keys(map).find((k) => lower.includes(k));
@@ -471,20 +475,8 @@ export default function VendorRegistration() {
 
       const data = await res.json();
       if (data.success) {
-        // Show success state
-        form.reset();
-        setMsmeRegistered('');
-        // Reset OTP state
-        setEmailValue('');
-        setEmailVerified(false);
-        setOtpSent(false);
-        setOtpValue('');
-        setOtpError('');
-        setCountdown(0);
-        // Clear auto-filled classes
-        document.querySelectorAll('.auto-filled').forEach((el) => el.classList.remove('auto-filled'));
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        alert('✅ Registration submitted successfully! Our team will review your application.');
+        // Show attractive success modal instead of alert
+        setShowSuccessModal(true);
       } else {
         alert('Registration failed: ' + (data.error || 'Unknown error'));
       }
@@ -504,13 +496,13 @@ export default function VendorRegistration() {
           <div className="aima-logo-wrap">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://www.aima.in/img/logo.png"
+              src="https://www.aima.in/img/favicon-logo.png"
               alt="AIMA — All India Management Association"
               className="aima-logo"
             />
             <div className="aima-logo-divider" />
             <div className="aima-portal-title">
-              <span className="title-main">Vendor Portal</span>
+              <span className="title-main">Vendor Registration Portal</span>
               <span className="title-sub">Registration System</span>
             </div>
           </div>
@@ -546,7 +538,7 @@ export default function VendorRegistration() {
 
       {/* ===== FORM ===== */}
       <main className="page-content">
-        <form onSubmit={handleSubmit} className="animate-fade-in">
+        <form onSubmit={handleSubmit} className={`animate-fade-in ${hasAttemptedSubmit ? 'was-validated' : ''}`}>
           <div className="card">
 
             {/* ── SECTION 1: GST VERIFICATION ── */}
@@ -555,59 +547,75 @@ export default function VendorRegistration() {
                 <div className="section-icon">🏛️</div>
                 <div>
                   <div className="section-title">GST Verification</div>
-                  <div className="section-title-desc">Upload your GST Certificate — AI will extract details automatically</div>
+                  <div className="section-title-desc">Are you registered under the GST Act?</div>
                 </div>
               </div>
               <div className="section-body">
-                <div className="row">
-                  <div className="form-group full-width">
-                    <label className="form-label">
-                      GST Certificate <span className="required">*</span>
-                      <span style={{ marginLeft: '0.5rem', fontSize: '0.72rem', color: 'var(--aima-gold-dark)', fontWeight: 400 }}>
-                        ⚡ Smart AI Scan
-                      </span>
+                <div className="form-group mb-2">
+                  <label className="form-label">Are you registered under the GST Act? <span className="required">*</span></label>
+                  <div style={{ display: 'flex', gap: '1rem', marginTop: '0.4rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+                      <input type="radio" name="isGstRegistered" value="yes" checked={isGstRegistered === 'yes'} onChange={() => setIsGstRegistered('yes')} />
+                      Yes
                     </label>
-                    <SmartUploadZone
-                      name="gstCertificate"
-                      docType="gst"
-                      label="Drop GST Certificate here (Image / PDF / DOCX)"
-                      required
-                      onScanComplete={handleGSTScan}
-                      onScanStatus={setGstScanState}
-                    />
-                    {gstScanState === 'idle' && (
-                      <div className="info-tip">
-                        💡 Upload your GST registration certificate to auto-fill business details below
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">GSTIN <span className="required">*</span></label>
-                    <input
-                      ref={refs.gstin}
-                      type="text"
-                      name="gstin"
-                      className="form-control"
-                      required
-                      placeholder="e.g. 27AABCT1332L1ZG"
-                      maxLength={15}
-                      style={{ textTransform: 'uppercase' }}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Legal Business Name <span className="required">*</span></label>
-                    <input
-                      ref={refs.legalBusinessName}
-                      type="text"
-                      name="legalBusinessName"
-                      className="form-control"
-                      required
-                      placeholder="As registered under GST"
-                    />
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+                      <input type="radio" name="isGstRegistered" value="no" checked={isGstRegistered === 'no'} onChange={() => setIsGstRegistered('no')} />
+                      No
+                    </label>
                   </div>
                 </div>
+
+                {isGstRegistered === 'yes' && (
+                  <div className="row" style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px dashed var(--border-color)' }}>
+                    <div className="form-group full-width">
+                      <label className="form-label">
+                        GST Certificate <span className="required">*</span>
+                        <span style={{ marginLeft: '0.5rem', fontSize: '0.72rem', color: 'var(--aima-gold-dark)', fontWeight: 400 }}>
+                          ⚡ Smart AI Scan
+                        </span>
+                      </label>
+                      <SmartUploadZone
+                        name="gstCertificate"
+                        docType="gst"
+                        label="Drop GST Certificate here (Image / PDF / DOCX)"
+                        required={isGstRegistered === 'yes'}
+                        onScanComplete={handleGSTScan}
+                        onScanStatus={setGstScanState}
+                      />
+                      {gstScanState === 'idle' && (
+                        <div className="info-tip">
+                          💡 Upload your GST registration certificate to auto-fill business details below
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">GSTIN <span className="required">*</span></label>
+                      <input
+                        ref={refs.gstin}
+                        type="text"
+                        name="gstin"
+                        className="form-control"
+                        required={isGstRegistered === 'yes'}
+                        placeholder="e.g. 27AABCT1332L1ZG"
+                        maxLength={15}
+                        style={{ textTransform: 'uppercase' }}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Legal Business Name <span className="required">*</span></label>
+                      <input
+                        ref={refs.legalBusinessName}
+                        type="text"
+                        name="legalBusinessName"
+                        className="form-control"
+                        required={isGstRegistered === 'yes'}
+                        placeholder="As registered under GST"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -640,11 +648,17 @@ export default function VendorRegistration() {
                     <select ref={refs.businessType} name="businessType" className="form-select" required>
                       <option value="">Select Business Type</option>
                       <option>Proprietorship</option>
-                      <option>Partnership</option>
-                      <option>Private Limited</option>
-                      <option>Limited Company</option>
+                      <option>Partnership Firm</option>
                       <option>LLP</option>
-                      <option>Other</option>
+                      <option>Private Limited Company</option>
+                      <option>Public Limited Company</option>
+                      <option>One Person Company (OPC)</option>
+                      <option>Section 8 Company</option>
+                      <option>Society</option>
+                      <option>Trust</option>
+                      <option>Government Organization</option>
+                      <option>Self Employed Professional</option>
+                      <option>Consultant/Freelancer</option>
                     </select>
                   </div>
 
@@ -657,7 +671,13 @@ export default function VendorRegistration() {
                       <option>Logistics</option>
                       <option>Marketing</option>
                       <option>Office Supplies</option>
-                      <option>Service Other</option>
+                      <option>Education</option>
+                      <option>Consulting</option>
+                      <option>Professional Services</option>
+                      <option>Finance</option>
+                      <option>NGOs</option>
+                      <option>Training Providers</option>
+                      <option>Others</option>
                     </select>
                   </div>
 
@@ -862,47 +882,65 @@ export default function VendorRegistration() {
                 <div className="section-icon">💳</div>
                 <div>
                   <div className="section-title">Tax &amp; Regulatory Details</div>
-                  <div className="section-title-desc">Upload PAN Card — AI will extract PAN number automatically</div>
+                  <div className="section-title-desc">Do you have a PAN Card?</div>
                 </div>
               </div>
               <div className="section-body">
-                <div className="row">
-                  <div className="form-group">
-                    <label className="form-label">
-                      PAN Card <span className="required">*</span>
-                      <span style={{ marginLeft: '0.5rem', fontSize: '0.72rem', color: 'var(--aima-gold-dark)', fontWeight: 400 }}>
-                        ⚡ Smart AI Scan
-                      </span>
+                <div className="form-group mb-2">
+                  <label className="form-label">Do you have a PAN Card? <span className="required">*</span></label>
+                  <div style={{ display: 'flex', gap: '1rem', marginTop: '0.4rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+                      <input type="radio" name="hasPanCard" value="yes" checked={hasPanCard === 'yes'} onChange={() => setHasPanCard('yes')} />
+                      Yes
                     </label>
-                    <SmartUploadZone
-                      name="panCard"
-                      docType="pan"
-                      label="Drop PAN Card here (Image / PDF / DOCX)"
-                      required
-                      onScanComplete={handlePANScan}
-                      onScanStatus={setPanScanState}
-                    />
-                    {panScanState === 'idle' && (
-                      <div className="info-tip">
-                        💡 Upload your PAN card to auto-fill the PAN number
-                      </div>
-                    )}
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+                      <input type="radio" name="hasPanCard" value="no" checked={hasPanCard === 'no'} onChange={() => setHasPanCard('no')} />
+                      No
+                    </label>
                   </div>
+                </div>
 
-                  <div className="form-group">
-                    <label className="form-label">PAN Number <span className="required">*</span></label>
-                    <input
-                      ref={refs.panNumber}
-                      type="text"
-                      name="panNumber"
-                      className="form-control"
-                      required
-                      placeholder="e.g. AABCT1332L"
-                      maxLength={10}
-                      style={{ textTransform: 'uppercase' }}
-                    />
+                {hasPanCard === 'yes' && (
+                  <div className="row" style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px dashed var(--border-color)' }}>
+                    <div className="form-group full-width">
+                      <label className="form-label">
+                        PAN Card <span className="required">*</span>
+                        <span style={{ marginLeft: '0.5rem', fontSize: '0.72rem', color: 'var(--aima-gold-dark)', fontWeight: 400 }}>
+                          ⚡ Smart AI Scan
+                        </span>
+                      </label>
+                      <SmartUploadZone
+                        name="panCard"
+                        docType="pan"
+                        label="Drop PAN Card here (Image / PDF / DOCX)"
+                        required={hasPanCard === 'yes'}
+                        onScanComplete={handlePANScan}
+                        onScanStatus={setPanScanState}
+                      />
+                      {panScanState === 'idle' && (
+                        <div className="info-tip">
+                          💡 Upload your PAN card to auto-fill the PAN number
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">PAN Number <span className="required">*</span></label>
+                      <input
+                        ref={refs.panNumber}
+                        type="text"
+                        name="panNumber"
+                        className="form-control"
+                        required={hasPanCard === 'yes'}
+                        placeholder="e.g. AABCT1332L"
+                        maxLength={10}
+                        style={{ textTransform: 'uppercase' }}
+                      />
+                    </div>
                   </div>
+                )}
 
+                <div className="row" style={{ marginTop: hasPanCard === 'no' ? '1.5rem' : '0' }}>
                   <div className="form-group">
                     <label className="form-label">MSME Registered? <span className="required">*</span></label>
                     <select
@@ -1094,6 +1132,7 @@ export default function VendorRegistration() {
                 style={{ minWidth: '240px', fontSize: '1rem' }}
                 disabled={isSubmitting}
                 id="submit-registration-btn"
+                onClick={() => setHasAttemptedSubmit(true)}
               >
                 {isSubmitting ? (
                   <>
@@ -1117,10 +1156,24 @@ export default function VendorRegistration() {
       {/* ===== FOOTER ===== */}
       <footer className="aima-footer">
         <p className="aima-footer-text">
-          © 2024 <span>All India Management Association (AIMA)</span> · Management House, 14, Institutional Area,
+          © {new Date().getFullYear()} <span>All India Management Association (AIMA)</span> · Management House, 14, Institutional Area,
           Lodhi Road, New Delhi – 110 003
         </p>
       </footer>
+
+      {/* ===== SUCCESS MODAL ===== */}
+      {showSuccessModal && (
+        <div className="modal-overlay">
+          <div className="modal-content success-modal">
+            <div className="success-icon">🎉</div>
+            <h2>Registration Successful!</h2>
+            <p>Your application has been submitted successfully. Our team will review your details and get back to you within 5-7 business days.</p>
+            <button className="btn-primary" onClick={() => window.location.reload()} style={{ width: '100%' }}>
+              Close &amp; Refresh
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

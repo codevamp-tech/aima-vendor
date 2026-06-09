@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 
 // Confirmed available on this API key via ListModels (v1beta & v1)
-// Using gemini-2.5-flash — multimodal, 1M ctx, best for OCR
+// Using gemini-1.5-flash — multimodal, 1M ctx, best for OCR
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 const GEMINI_MODEL    = 'gemini-2.5-flash';
 
@@ -63,7 +63,7 @@ interface GeminiPart {
   inlineData?: { mimeType: string; data: string };
 }
 
-async function callGemini(parts: GeminiPart[]): Promise<string> {
+async function callGemini(parts: GeminiPart[], retries = 3): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY || '';
   if (!apiKey || apiKey === 'your_gemini_api_key_here') {
     throw new Error('GEMINI_API_KEY not configured');
@@ -75,35 +75,56 @@ async function callGemini(parts: GeminiPart[]): Promise<string> {
     contents: [{ parts }],
     generationConfig: {
       temperature: 0.1,  // low temperature for factual extraction
-      maxOutputTokens: 1024,
+      maxOutputTokens: 4096,
+      responseMimeType: "application/json",
     },
   };
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
 
-  if (!res.ok) {
-    const errText = await res.text().catch(() => res.statusText);
-    throw new Error(`Gemini API error ${res.status}: ${errText}`);
+    if (!res.ok) {
+      const errText = await res.text().catch(() => res.statusText);
+      if (res.status === 503 && attempt < retries) {
+        console.warn(`Gemini 503 High Demand (attempt ${attempt}/${retries}). Retrying...`);
+        await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
+        continue;
+      }
+      throw new Error(`Gemini API error ${res.status}: ${errText}`);
+    }
+
+    const json = await res.json();
+    const text: string = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    if (!text) {
+      if (attempt < retries) {
+        console.warn(`Gemini returned empty response (attempt ${attempt}/${retries}). Retrying...`);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        continue;
+      }
+      throw new Error('Gemini returned empty response');
+    }
+    return text;
   }
-
-  const json = await res.json();
-  const text: string = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-  if (!text) throw new Error('Gemini returned empty response');
-  return text;
+  
+  throw new Error('Gemini API failed after retries');
 }
 
 function parseJSON(raw: string): Record<string, string> {
-  // Strip markdown fences if present
-  const clean = raw
-    .trim()
-    .replace(/^```(?:json)?\s*/im, '')
-    .replace(/\s*```$/im, '')
-    .trim();
-  return JSON.parse(clean);
+  try {
+    // Find the first '{' and last '}'
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) {
+      throw new Error("No JSON object found in response");
+    }
+    return JSON.parse(match[0]);
+  } catch (err) {
+    console.error("Failed to parse JSON. Raw output:", raw);
+    throw err;
+  }
 }
 
 // ─── Extractors ──────────────────────────────────────────────────────────────
