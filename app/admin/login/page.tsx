@@ -314,7 +314,7 @@ export default function AdminLoginPage() {
           <div className="login-card-header">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://www.aima.in/img/logo.png"
+              src="https://www.aima.in/img/favicon-logo.png"
               alt="AIMA"
               className="login-logo"
             />

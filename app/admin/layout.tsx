@@ -35,14 +35,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="aima-logo-wrap">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://www.aima.in/img/logo.png"
-              alt="AIMA — All India Management Association"
+              src="https://www.aima.in/img/favicon-logo.png"
+              alt="AIMA Logo"
               className="aima-logo"
             />
             <div className="aima-logo-divider" />
             <div className="aima-portal-title">
-              <span className="title-main">Admin Dashboard</span>
-              <span className="title-sub">Vendor Management System</span>
+              <span className="title-main">Vendor Registration Portal</span>
+              <span className="title-sub">Admin Dashboard</span>
             </div>
           </div>
 

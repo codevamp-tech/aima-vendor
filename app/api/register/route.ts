@@ -58,7 +58,8 @@ export async function POST(req: Request) {
       const filePath = path.join(uploadDir, uniqueName);
       
       await writeFile(filePath, buffer);
-      return `/uploads/${uniqueName}`; // Return relative path for web access
+      const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '/account';
+      return `${basePath}/uploads/${uniqueName}`; // Return relative path for web access
     };
 
     // Save files
