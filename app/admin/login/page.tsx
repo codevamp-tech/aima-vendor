@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiUrl } from '@/lib/api-path';
+import { apiUrl, BASE_PATH } from '@/lib/api-path';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -314,7 +314,7 @@ export default function AdminLoginPage() {
           <div className="login-card-header">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://www.aima.in/img/favicon-logo.png"
+              src={`${BASE_PATH}/maxresdefault.jpg`}
               alt="AIMA"
               className="login-logo"
             />

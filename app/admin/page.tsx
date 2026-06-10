@@ -162,20 +162,9 @@ export default function AdminPage() {
             {loading ? '—' : total}
           </div>
         </div>
-
-        <div style={{
-          background: 'linear-gradient(135deg, var(--aima-gold-dark), var(--aima-gold))',
-          color: '#fff', padding: '1rem 1.5rem', borderRadius: '10px',
-          flex: '1', minWidth: '180px', boxShadow: 'var(--shadow-md)',
-        }}>
-          <div style={{ fontSize: '0.72rem', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.25rem' }}>
-            Pending Review
-          </div>
-          <div style={{ fontSize: '2rem', fontWeight: 700 }}>
-            {loading ? '—' : total}
-          </div>
-        </div>
       </div>
+
+
 
       {/* Table card */}
       <div className="card">
@@ -328,7 +317,6 @@ export default function AdminPage() {
                   <th>Phone</th>
                   <th>State</th>
                   <th>Registered On</th>
-                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -375,9 +363,6 @@ export default function AdminPage() {
                       {new Date(vendor.created_at).toLocaleDateString('en-IN', {
                         day: '2-digit', month: 'short', year: 'numeric',
                       })}
-                    </td>
-                    <td>
-                      <span className="status-badge pending">Pending</span>
                     </td>
                   </tr>
                 ))}

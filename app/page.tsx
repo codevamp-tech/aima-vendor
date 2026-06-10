@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import Image from 'next/image';
-import { apiUrl } from '@/lib/api-path';
+import { apiUrl, BASE_PATH } from '@/lib/api-path';
 
 /* =========================================================
    TYPES
@@ -496,14 +496,14 @@ export default function VendorRegistration() {
           <div className="aima-logo-wrap">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://www.aima.in/img/favicon-logo.png"
+              src={`${BASE_PATH}/maxresdefault.jpg`}
               alt="AIMA — All India Management Association"
               className="aima-logo"
             />
             <div className="aima-logo-divider" />
             <div className="aima-portal-title">
-              <span className="title-main">Vendor Registration Portal</span>
-              <span className="title-sub">Registration System</span>
+              <h1 className="title-main">Vendor Registration Portal</h1>
+              {/* <span className="title-sub">Registration System</span> */}
             </div>
           </div>
 
@@ -516,7 +516,7 @@ export default function VendorRegistration() {
 
       {/* ===== HERO BANNER ===== */}
       <section className="aima-hero">
-        <h1 className="aima-hero-title">Vendor Registration Portal</h1>
+        {/* <h1 className="aima-hero-title">Vendor Registration Portal</h1> */}
         <p className="aima-hero-sub">
           Register your business with AIMA. Upload your GST &amp; PAN documents — our AI will auto-fill your details instantly.
         </p>
@@ -603,17 +603,6 @@ export default function VendorRegistration() {
                       />
                     </div>
 
-                    <div className="form-group">
-                      <label className="form-label">Legal Business Name <span className="required">*</span></label>
-                      <input
-                        ref={refs.legalBusinessName}
-                        type="text"
-                        name="legalBusinessName"
-                        className="form-control"
-                        required={isGstRegistered === 'yes'}
-                        placeholder="As registered under GST"
-                      />
-                    </div>
                   </div>
                 )}
               </div>
@@ -632,6 +621,18 @@ export default function VendorRegistration() {
               </div>
               <div className="section-body">
                 <div className="row">
+                  <div className="form-group full-width">
+                    <label className="form-label">Legal Business Name <span className="required">*</span></label>
+                    <input
+                      ref={refs.legalBusinessName}
+                      type="text"
+                      name="legalBusinessName"
+                      className="form-control"
+                      required
+                      placeholder="Legal Entity Name"
+                    />
+                  </div>
+
                   <div className="form-group">
                     <label className="form-label">Trade Name</label>
                     <input
