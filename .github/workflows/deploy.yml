@@ -1,0 +1,34 @@
+name: Deploy AIMA Vendor Portal
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Pull latest code
+        shell: bash
+        run: |
+          cd /d/html/users/userweb8/Html/account/aima-vendor
+          git pull origin master
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          cd /d/html/users/userweb8/Html/account/aima-vendor
+          npm install
+
+      - name: Build project
+        shell: bash
+        run: |
+          cd /d/html/users/userweb8/Html/account/aima-vendor
+          npm run build
+
+      - name: Restart PM2 service
+        shell: bash
+        run: |
+          cd /d/html/users/userweb8/Html/account/aima-vendor
+          npx pm2 restart vendor-portal
