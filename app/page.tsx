@@ -1168,7 +1168,7 @@ export default function VendorRegistration() {
           <div className="modal-content success-modal">
             <div className="success-icon">🎉</div>
             <h2>Registration Successful!</h2>
-            <p>Your application has been submitted successfully. Our team will review your details and get back to you within 5-7 business days.</p>
+            <p>Your application has been submitted successfully.</p>
             <button className="btn-primary" onClick={() => window.location.reload()} style={{ width: '100%' }}>
               Close &amp; Refresh
             </button>

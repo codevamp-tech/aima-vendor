@@ -3,7 +3,7 @@ import pool from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
-import { sendSubmissionConfirmationEmail } from '@/lib/mailer';
+import { sendSubmissionConfirmationEmail, sendAdminNotificationEmail } from '@/lib/mailer';
 
 // App Router handles formData / body parsing automatically — no config needed
 
@@ -103,6 +103,20 @@ export async function POST(req: Request) {
       primaryContactName || legalBusinessName,
       legalBusinessName,
     ).catch(err => console.error('Confirmation email error:', err));
+
+    // Send notification email to admin (fire-and-forget — don't block response)
+    sendAdminNotificationEmail({
+      legalBusinessName,
+      tradeName,
+      primaryContactName,
+      emailAddress,
+      phoneNumber,
+      businessType,
+      industryCategory,
+      state: stateUnionTerritory,
+      panNumber,
+      gstin,
+    }).catch(err => console.error('Admin notification email error:', err));
 
     return NextResponse.json({ success: true, id: (result as any).insertId });
   } catch (error) {

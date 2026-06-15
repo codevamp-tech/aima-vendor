@@ -103,7 +103,6 @@ export async function sendSubmissionConfirmationEmail(
     '',
     'Thank you for registering with the AIMA Vendor Portal.',
     'Your registration for "' + companyName + '" has been successfully submitted.',
-    'Our team will review your application and respond to you shortly.',
     '',
     'For queries: vendor@aima.in',
     '',
@@ -135,17 +134,8 @@ export async function sendSubmissionConfirmationEmail(
             <p style="margin:0 0 16px;font-size:0.92rem;color:#5a6a7a;line-height:1.6;">
               Thank you for registering with the <strong style="color:#003366;">AIMA Vendor Portal</strong>.
               Your application for <strong style="color:#003366;">${companyName}</strong> has been successfully
-              submitted. Our vendor management team will review it and respond to you shortly.
+              submitted.
             </p>
-            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4f8;border-radius:10px;border-left:4px solid #003366;margin-bottom:24px;">
-              <tr>
-                <td style="padding:16px 20px;">
-                  <div style="font-size:0.82rem;color:#5a6a7a;font-weight:600;text-transform:uppercase;margin-bottom:8px;">Submission Summary</div>
-                  <div style="font-size:0.88rem;color:#1a2332;">Company: <strong>${companyName}</strong></div>
-                  <div style="font-size:0.88rem;color:#1a2332;margin-top:4px;">Status: <span style="color:#059669;font-weight:700;">Under Review</span></div>
-                </td>
-              </tr>
-            </table>
             <p style="margin:0;font-size:0.85rem;color:#8a9bac;">
               For queries: <a href="mailto:vendor@aima.in" style="color:#003366;font-weight:600;">vendor@aima.in</a>
             </p>
@@ -165,4 +155,131 @@ export async function sendSubmissionConfirmationEmail(
 </html>`;
 
   await transporter.sendMail({ from, to, subject, text, html });
+}
+
+export async function sendAdminNotificationEmail(
+  vendorDetails: {
+    legalBusinessName: string;
+    tradeName?: string;
+    primaryContactName: string;
+    emailAddress: string;
+    phoneNumber: string;
+    businessType?: string;
+    industryCategory?: string;
+    state?: string;
+    panNumber?: string;
+    gstin?: string;
+  }
+): Promise<void> {
+  const transporter = createTransporter();
+  const from = process.env.SMTP_FROM || '"AIMA Vendor Portal" <vendor@aima.in>';
+
+  const to = 'vendor@aima.in';
+  const bcc = 'psingh@aima.in';
+  const subject = 'New Vendor Registered — AIMA Vendor Portal';
+
+  const text = [
+    'Dear Admin,',
+    '',
+    'A new vendor has successfully registered on the AIMA Vendor Portal.',
+    '',
+    'Basic Details:',
+    `- Legal Business Name: ${vendorDetails.legalBusinessName}`,
+    `- Trade Name: ${vendorDetails.tradeName || 'N/A'}`,
+    `- Primary Contact Person: ${vendorDetails.primaryContactName}`,
+    `- Email Address: ${vendorDetails.emailAddress}`,
+    `- Phone Number: ${vendorDetails.phoneNumber}`,
+    `- Business Type: ${vendorDetails.businessType || 'N/A'}`,
+    `- Industry Category: ${vendorDetails.industryCategory || 'N/A'}`,
+    `- State: ${vendorDetails.state || 'N/A'}`,
+    `- PAN Number: ${vendorDetails.panNumber || 'N/A'}`,
+    `- GSTIN: ${vendorDetails.gstin || 'N/A'}`,
+    '',
+    'This is an automated notification.',
+    '',
+    '— AIMA Vendor Management Team',
+  ].join('\n');
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#f0f4f8;font-family:Roboto,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4f8;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,51,102,0.12);">
+        <tr>
+          <td style="background:linear-gradient(135deg,#002244,#003366,#004a8f);padding:32px;text-align:center;">
+            <div style="font-size:1.25rem;color:#ffffff;font-weight:700;">AIMA Vendor Portal</div>
+            <div style="font-size:0.75rem;color:rgba(200,169,81,0.9);text-transform:uppercase;margin-top:4px;">All India Management Association</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#003366;padding:16px 32px;text-align:center;">
+            <div style="color:#fff;font-size:1rem;font-weight:700;">New Vendor Registration Notification</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px;">
+            <p style="margin:0 0 16px;font-size:0.95rem;color:#5a6a7a;">
+              A new vendor has successfully registered on the AIMA Vendor Portal. Below are the basic registration details:
+            </p>
+            <table width="100%" cellpadding="8" cellspacing="0" style="border-collapse:collapse;margin-top:16px;font-size:0.9rem;color:#1a2332;">
+              <tr style="background:#f8fafc;border-bottom:1px solid #e8edf3;">
+                <td width="40%" style="font-weight:600;padding:10px;">Legal Business Name</td>
+                <td style="padding:10px;">${vendorDetails.legalBusinessName}</td>
+              </tr>
+              <tr style="border-bottom:1px solid #e8edf3;">
+                <td style="font-weight:600;padding:10px;">Trade Name</td>
+                <td style="padding:10px;">${vendorDetails.tradeName || 'N/A'}</td>
+              </tr>
+              <tr style="background:#f8fafc;border-bottom:1px solid #e8edf3;">
+                <td style="font-weight:600;padding:10px;">Primary Contact Name</td>
+                <td style="padding:10px;">${vendorDetails.primaryContactName}</td>
+              </tr>
+              <tr style="border-bottom:1px solid #e8edf3;">
+                <td style="font-weight:600;padding:10px;">Email Address</td>
+                <td style="padding:10px;"><a href="mailto:${vendorDetails.emailAddress}" style="color:#003366;text-decoration:none;">${vendorDetails.emailAddress}</a></td>
+              </tr>
+              <tr style="background:#f8fafc;border-bottom:1px solid #e8edf3;">
+                <td style="font-weight:600;padding:10px;">Phone Number</td>
+                <td style="padding:10px;">${vendorDetails.phoneNumber}</td>
+              </tr>
+              <tr style="border-bottom:1px solid #e8edf3;">
+                <td style="font-weight:600;padding:10px;">Business Type</td>
+                <td style="padding:10px;">${vendorDetails.businessType || 'N/A'}</td>
+              </tr>
+              <tr style="background:#f8fafc;border-bottom:1px solid #e8edf3;">
+                <td style="font-weight:600;padding:10px;">Industry Category</td>
+                <td style="padding:10px;">${vendorDetails.industryCategory || 'N/A'}</td>
+              </tr>
+              <tr style="border-bottom:1px solid #e8edf3;">
+                <td style="font-weight:600;padding:10px;">State</td>
+                <td style="padding:10px;">${vendorDetails.state || 'N/A'}</td>
+              </tr>
+              <tr style="background:#f8fafc;border-bottom:1px solid #e8edf3;">
+                <td style="font-weight:600;padding:10px;">PAN Number</td>
+                <td style="padding:10px;">${vendorDetails.panNumber || 'N/A'}</td>
+              </tr>
+              <tr style="border-bottom:1px solid #e8edf3;">
+                <td style="font-weight:600;padding:10px;">GSTIN</td>
+                <td style="padding:10px;">${vendorDetails.gstin || 'N/A'}</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#f8fafc;border-top:1px solid #e8edf3;padding:20px 32px;text-align:center;">
+            <p style="margin:0;font-size:0.75rem;color:#8a9bac;">
+              &copy; 2024 All India Management Association (AIMA) &middot; Management House, New Delhi
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  await transporter.sendMail({ from, to, bcc, subject, text, html });
 }
