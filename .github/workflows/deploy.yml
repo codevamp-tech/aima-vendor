@@ -10,25 +10,25 @@ jobs:
     runs-on: [self-hosted, aima]
     steps:
       - name: Pull latest code
-        shell: bash
+        shell: powershell
         run: |
-          cd /d/html/users/userweb8/Html/account/aima-vendor
+          cd D:\html\users\userweb8\Html\account\aima-vendor
           git pull origin master
 
       - name: Install dependencies
-        shell: bash
+        shell: powershell
         run: |
-          cd /d/html/users/userweb8/Html/account/aima-vendor
+          cd D:\html\users\userweb8\Html\account\aima-vendor
           npm install
 
       - name: Build project
-        shell: bash
+        shell: powershell
         run: |
-          cd /d/html/users/userweb8/Html/account/aima-vendor
+          cd D:\html\users\userweb8\Html\account\aima-vendor
           npm run build
 
       - name: Restart PM2 service
-        shell: bash
+        shell: powershell
         run: |
-          cd /d/html/users/userweb8/Html/account/aima-vendor
+          cd D:\html\users\userweb8\Html\account\aima-vendor
           npx pm2 restart vendor-portal
