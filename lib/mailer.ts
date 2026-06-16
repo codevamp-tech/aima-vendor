@@ -159,16 +159,33 @@ export async function sendSubmissionConfirmationEmail(
 
 export async function sendAdminNotificationEmail(
   vendorDetails: {
+    gstin?: string;
     legalBusinessName: string;
     tradeName?: string;
+    businessType: string;
+    industryCategory: string;
+    companyRegistrationNumber?: string;
+    dateOfIncorporation?: string | null;
+    companyWebsite?: string;
     primaryContactName: string;
+    designation: string;
     emailAddress: string;
     phoneNumber: string;
-    businessType?: string;
-    industryCategory?: string;
-    state?: string;
+    registeredOfficeAddress: string;
+    state: string;
+    postalCode: string;
     panNumber?: string;
-    gstin?: string;
+    msmeRegistered: string;
+    rcmApplicable?: string;
+    msmeNumber?: string;
+    enterpriseName?: string;
+    udyamDate?: string | null;
+    msmeCategory?: string;
+    gstCertificateUrl?: string;
+    panCardUrl?: string;
+    msmeFileUrl?: string;
+    coiFileUrl?: string;
+    cancelledChequeUrl?: string;
   }
 ): Promise<void> {
   const transporter = createTransporter();
@@ -176,29 +193,78 @@ export async function sendAdminNotificationEmail(
 
   const to = 'vendor@aima.in';
   const bcc = 'psingh@aima.in';
-  const subject = 'New Vendor Registered — AIMA Vendor Portal';
+  const subject = `New Vendor Registered — ${vendorDetails.legalBusinessName}`;
+
+  // Helper to safely display null or undefined fields
+  const showVal = (val?: string | null) => val && val.trim() !== '' ? val : 'N/A';
 
   const text = [
     'Dear Admin,',
     '',
     'A new vendor has successfully registered on the AIMA Vendor Portal.',
     '',
-    'Basic Details:',
+    '--- BUSINESS DETAILS ---',
     `- Legal Business Name: ${vendorDetails.legalBusinessName}`,
-    `- Trade Name: ${vendorDetails.tradeName || 'N/A'}`,
-    `- Primary Contact Person: ${vendorDetails.primaryContactName}`,
+    `- Trade Name: ${showVal(vendorDetails.tradeName)}`,
+    `- Business Type: ${vendorDetails.businessType}`,
+    `- Industry Category: ${vendorDetails.industryCategory}`,
+    `- Company Registration Number: ${showVal(vendorDetails.companyRegistrationNumber)}`,
+    `- Date of Incorporation: ${showVal(vendorDetails.dateOfIncorporation)}`,
+    `- Company Website: ${showVal(vendorDetails.companyWebsite)}`,
+    '',
+    '--- CONTACT INFORMATION ---',
+    `- Primary Contact Name: ${vendorDetails.primaryContactName}`,
+    `- Designation: ${vendorDetails.designation}`,
     `- Email Address: ${vendorDetails.emailAddress}`,
     `- Phone Number: ${vendorDetails.phoneNumber}`,
-    `- Business Type: ${vendorDetails.businessType || 'N/A'}`,
-    `- Industry Category: ${vendorDetails.industryCategory || 'N/A'}`,
-    `- State: ${vendorDetails.state || 'N/A'}`,
-    `- PAN Number: ${vendorDetails.panNumber || 'N/A'}`,
-    `- GSTIN: ${vendorDetails.gstin || 'N/A'}`,
+    `- Registered Office Address: ${vendorDetails.registeredOfficeAddress}`,
+    `- State: ${vendorDetails.state}`,
+    `- Postal/PIN Code: ${vendorDetails.postalCode}`,
+    '',
+    '--- TAX & REGULATORY DETAILS ---',
+    `- GSTIN: ${showVal(vendorDetails.gstin)}`,
+    `- PAN Number: ${showVal(vendorDetails.panNumber)}`,
+    `- MSME Registered: ${vendorDetails.msmeRegistered}`,
+    `- RCM Applicable: ${showVal(vendorDetails.rcmApplicable)}`,
+    '',
+    ...(vendorDetails.msmeRegistered === 'Yes' ? [
+      '--- MSME / UDYAM DETAILS ---',
+      `- MSME Number: ${showVal(vendorDetails.msmeNumber)}`,
+      `- Enterprise Name: ${showVal(vendorDetails.enterpriseName)}`,
+      `- Udyam Registration Date: ${showVal(vendorDetails.udyamDate)}`,
+      `- MSME Category: ${showVal(vendorDetails.msmeCategory)}`,
+      ''
+    ] : []),
+    '--- UPLOADED DOCUMENTS ---',
+    `- GST Certificate: ${showVal(vendorDetails.gstCertificateUrl)}`,
+    `- PAN Card: ${showVal(vendorDetails.panCardUrl)}`,
+    `- MSME Certificate: ${showVal(vendorDetails.msmeFileUrl)}`,
+    `- Certificate of Incorporation: ${showVal(vendorDetails.coiFileUrl)}`,
+    `- Cancelled Cheque: ${showVal(vendorDetails.cancelledChequeUrl)}`,
     '',
     'This is an automated notification.',
     '',
     '— AIMA Vendor Management Team',
   ].join('\n');
+
+  // Helper for rendering table rows
+  const renderRow = (label: string, value?: string | null, isLink: boolean = false, bg: boolean = false) => {
+    const background = bg ? '#f8fafc' : '#ffffff';
+    let valContent = showVal(value);
+    
+    if (isLink && value && value.trim() !== '' && value !== 'N/A') {
+      valContent = `<a href="${value}" target="_blank" style="color:#003366;font-weight:600;text-decoration:underline;">Download / View File</a>`;
+    } else if (isLink) {
+      valContent = '<span style="color:#8a9bac;font-style:italic;">Not Uploaded</span>';
+    }
+
+    return `
+      <tr style="background:${background};border-bottom:1px solid #e8edf3;">
+        <td width="40%" style="font-weight:600;padding:10px 14px;color:#002244;">${label}</td>
+        <td style="padding:10px 14px;color:#1a2332;">${valContent}</td>
+      </tr>
+    `;
+  };
 
   const html = `
 <!DOCTYPE html>
@@ -207,11 +273,11 @@ export async function sendAdminNotificationEmail(
 <body style="margin:0;padding:0;background:#f0f4f8;font-family:Roboto,Arial,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4f8;padding:40px 16px;">
     <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,51,102,0.12);">
+      <table width="650" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,51,102,0.12);">
         <tr>
           <td style="background:linear-gradient(135deg,#002244,#003366,#004a8f);padding:32px;text-align:center;">
-            <div style="font-size:1.25rem;color:#ffffff;font-weight:700;">AIMA Vendor Portal</div>
-            <div style="font-size:0.75rem;color:rgba(200,169,81,0.9);text-transform:uppercase;margin-top:4px;">All India Management Association</div>
+            <div style="font-size:1.35rem;color:#ffffff;font-weight:700;letter-spacing:0.03em;">AIMA Vendor Portal</div>
+            <div style="font-size:0.75rem;color:rgba(200,169,81,0.9);text-transform:uppercase;margin-top:6px;letter-spacing:0.08em;">All India Management Association</div>
           </td>
         </tr>
         <tr>
@@ -221,51 +287,74 @@ export async function sendAdminNotificationEmail(
         </tr>
         <tr>
           <td style="padding:32px;">
-            <p style="margin:0 0 16px;font-size:0.95rem;color:#5a6a7a;">
-              A new vendor has successfully registered on the AIMA Vendor Portal. Below are the basic registration details:
+            <p style="margin:0 0 24px;font-size:0.95rem;color:#5a6a7a;line-height:1.5;">
+              A new vendor has successfully registered on the AIMA Vendor Portal. Below are the complete registration details:
             </p>
-            <table width="100%" cellpadding="8" cellspacing="0" style="border-collapse:collapse;margin-top:16px;font-size:0.9rem;color:#1a2332;">
-              <tr style="background:#f8fafc;border-bottom:1px solid #e8edf3;">
-                <td width="40%" style="font-weight:600;padding:10px;">Legal Business Name</td>
-                <td style="padding:10px;">${vendorDetails.legalBusinessName}</td>
-              </tr>
-              <tr style="border-bottom:1px solid #e8edf3;">
-                <td style="font-weight:600;padding:10px;">Trade Name</td>
-                <td style="padding:10px;">${vendorDetails.tradeName || 'N/A'}</td>
-              </tr>
-              <tr style="background:#f8fafc;border-bottom:1px solid #e8edf3;">
-                <td style="font-weight:600;padding:10px;">Primary Contact Name</td>
-                <td style="padding:10px;">${vendorDetails.primaryContactName}</td>
-              </tr>
-              <tr style="border-bottom:1px solid #e8edf3;">
-                <td style="font-weight:600;padding:10px;">Email Address</td>
-                <td style="padding:10px;"><a href="mailto:${vendorDetails.emailAddress}" style="color:#003366;text-decoration:none;">${vendorDetails.emailAddress}</a></td>
-              </tr>
-              <tr style="background:#f8fafc;border-bottom:1px solid #e8edf3;">
-                <td style="font-weight:600;padding:10px;">Phone Number</td>
-                <td style="padding:10px;">${vendorDetails.phoneNumber}</td>
-              </tr>
-              <tr style="border-bottom:1px solid #e8edf3;">
-                <td style="font-weight:600;padding:10px;">Business Type</td>
-                <td style="padding:10px;">${vendorDetails.businessType || 'N/A'}</td>
-              </tr>
-              <tr style="background:#f8fafc;border-bottom:1px solid #e8edf3;">
-                <td style="font-weight:600;padding:10px;">Industry Category</td>
-                <td style="padding:10px;">${vendorDetails.industryCategory || 'N/A'}</td>
-              </tr>
-              <tr style="border-bottom:1px solid #e8edf3;">
-                <td style="font-weight:600;padding:10px;">State</td>
-                <td style="padding:10px;">${vendorDetails.state || 'N/A'}</td>
-              </tr>
-              <tr style="background:#f8fafc;border-bottom:1px solid #e8edf3;">
-                <td style="font-weight:600;padding:10px;">PAN Number</td>
-                <td style="padding:10px;">${vendorDetails.panNumber || 'N/A'}</td>
-              </tr>
-              <tr style="border-bottom:1px solid #e8edf3;">
-                <td style="font-weight:600;padding:10px;">GSTIN</td>
-                <td style="padding:10px;">${vendorDetails.gstin || 'N/A'}</td>
-              </tr>
-            </table>
+
+            <!-- SECTION 1: BUSINESS DETAILS -->
+            <div style="margin-bottom:28px;">
+              <div style="font-size:1rem;font-weight:700;color:#003366;border-bottom:2px solid #e8edf3;padding-bottom:6px;margin-bottom:12px;">🏢 Business Details</div>
+              <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-size:0.9rem;">
+                ${renderRow('Legal Business Name', vendorDetails.legalBusinessName, false, true)}
+                ${renderRow('Trade Name', vendorDetails.tradeName, false, false)}
+                ${renderRow('Business Type', vendorDetails.businessType, false, true)}
+                ${renderRow('Industry Category', vendorDetails.industryCategory, false, false)}
+                ${renderRow('Company Reg. Number (CIN)', vendorDetails.companyRegistrationNumber, false, true)}
+                ${renderRow('Date of Incorporation', vendorDetails.dateOfIncorporation, false, false)}
+                ${renderRow('Company Website', vendorDetails.companyWebsite, false, true)}
+              </table>
+            </div>
+
+            <!-- SECTION 2: CONTACT DETAILS -->
+            <div style="margin-bottom:28px;">
+              <div style="font-size:1rem;font-weight:700;color:#003366;border-bottom:2px solid #e8edf3;padding-bottom:6px;margin-bottom:12px;">👤 Contact Information</div>
+              <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-size:0.9rem;">
+                ${renderRow('Primary Contact Name', vendorDetails.primaryContactName, false, true)}
+                ${renderRow('Designation', vendorDetails.designation, false, false)}
+                ${renderRow('Email Address', vendorDetails.emailAddress, false, true)}
+                ${renderRow('Phone Number', vendorDetails.phoneNumber, false, false)}
+                ${renderRow('Registered Address', vendorDetails.registeredOfficeAddress, false, true)}
+                ${renderRow('State', vendorDetails.state, false, false)}
+                ${renderRow('Postal/PIN Code', vendorDetails.postalCode, false, true)}
+              </table>
+            </div>
+
+            <!-- SECTION 3: TAX & REGULATORY -->
+            <div style="margin-bottom:28px;">
+              <div style="font-size:1rem;font-weight:700;color:#003366;border-bottom:2px solid #e8edf3;padding-bottom:6px;margin-bottom:12px;">💳 Tax & Regulatory Details</div>
+              <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-size:0.9rem;">
+                ${renderRow('GSTIN', vendorDetails.gstin, false, true)}
+                ${renderRow('PAN Number', vendorDetails.panNumber, false, false)}
+                ${renderRow('MSME Registered', vendorDetails.msmeRegistered, false, true)}
+                ${renderRow('RCM Applicable', vendorDetails.rcmApplicable, false, false)}
+              </table>
+            </div>
+
+            <!-- SECTION 4: MSME DETAILS (Conditional) -->
+            ${vendorDetails.msmeRegistered === 'Yes' ? `
+            <div style="margin-bottom:28px;">
+              <div style="font-size:1rem;font-weight:700;color:#003366;border-bottom:2px solid #e8edf3;padding-bottom:6px;margin-bottom:12px;">🏭 MSME / Udyam Details</div>
+              <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-size:0.9rem;">
+                ${renderRow('MSME Number', vendorDetails.msmeNumber, false, true)}
+                ${renderRow('Enterprise Name', vendorDetails.enterpriseName, false, false)}
+                ${renderRow('Udyam Registration Date', vendorDetails.udyamDate, false, true)}
+                ${renderRow('MSME Category', vendorDetails.msmeCategory, false, false)}
+              </table>
+            </div>
+            ` : ''}
+
+            <!-- SECTION 5: UPLOADED DOCUMENTS -->
+            <div style="margin-bottom:12px;">
+              <div style="font-size:1rem;font-weight:700;color:#003366;border-bottom:2px solid #e8edf3;padding-bottom:6px;margin-bottom:12px;">📁 Supporting Documents</div>
+              <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-size:0.9rem;">
+                ${renderRow('GST Certificate', vendorDetails.gstCertificateUrl, true, true)}
+                ${renderRow('PAN Card', vendorDetails.panCardUrl, true, false)}
+                ${renderRow('MSME Certificate', vendorDetails.msmeFileUrl, true, true)}
+                ${renderRow('Certificate of Incorporation (COI)', vendorDetails.coiFileUrl, true, false)}
+                ${renderRow('Cancelled Cheque / Statement', vendorDetails.cancelledChequeUrl, true, true)}
+              </table>
+            </div>
+
           </td>
         </tr>
         <tr>

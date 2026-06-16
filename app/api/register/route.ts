@@ -48,9 +48,14 @@ export async function POST(req: Request) {
     }
 
     // Process files helper function
-    const saveFile = async (fileKey: string): Promise<string> => {
+    const saveFile = async (fileKey: string, displayName: string): Promise<string> => {
       const file = formData.get(fileKey) as File;
       if (!file || file.size === 0) return '';
+      
+      // Limit file size to 1MB (1,048,576 bytes)
+      if (file.size > 1024 * 1024) {
+        throw new Error(`File size of ${displayName} exceeds the 1MB limit.`);
+      }
       
       const buffer = Buffer.from(await file.arrayBuffer());
       const ext = path.extname(file.name) || '.pdf';
@@ -63,11 +68,11 @@ export async function POST(req: Request) {
     };
 
     // Save files
-    const gstCertificatePath = await saveFile('gstCertificate');
-    const panCardPath = await saveFile('panCard');
-    const msmeFilePath = await saveFile('msmeFile');
-    const coiFilePath = await saveFile('certificateOfIncorporation');
-    const cancelledChequePath = await saveFile('cancelledCheque');
+    const gstCertificatePath = await saveFile('gstCertificate', 'GST Certificate');
+    const panCardPath = await saveFile('panCard', 'PAN Card');
+    const msmeFilePath = await saveFile('msmeFile', 'MSME Certificate');
+    const coiFilePath = await saveFile('certificateOfIncorporation', 'Certificate of Incorporation');
+    const cancelledChequePath = await saveFile('cancelledCheque', 'Cancelled Cheque');
 
     // Insert into DB
     const query = `
@@ -104,23 +109,55 @@ export async function POST(req: Request) {
       legalBusinessName,
     ).catch(err => console.error('Confirmation email error:', err));
 
+    // Construct absolute URLs for documents to place in the admin email
+    const host = req.headers.get('host') || 'localhost:3000';
+    const protocol = req.headers.get('x-forwarded-proto') || 'http';
+    const baseUrl = `${protocol}://${host}`;
+
+    const gstCertificateUrl = gstCertificatePath ? `${baseUrl}${gstCertificatePath}` : '';
+    const panCardUrl = panCardPath ? `${baseUrl}${panCardPath}` : '';
+    const msmeFileUrl = msmeFilePath ? `${baseUrl}${msmeFilePath}` : '';
+    const coiFileUrl = coiFilePath ? `${baseUrl}${coiFilePath}` : '';
+    const cancelledChequeUrl = cancelledChequePath ? `${baseUrl}${cancelledChequePath}` : '';
+
     // Send notification email to admin (fire-and-forget — don't block response)
     sendAdminNotificationEmail({
+      gstin,
       legalBusinessName,
       tradeName,
-      primaryContactName,
-      emailAddress,
-      phoneNumber,
       businessType,
       industryCategory,
+      companyRegistrationNumber,
+      dateOfIncorporation: safeDate(dateOfIncorporation),
+      companyWebsite,
+      primaryContactName,
+      designation,
+      emailAddress,
+      phoneNumber,
+      registeredOfficeAddress,
       state: stateUnionTerritory,
+      postalCode,
       panNumber,
-      gstin,
+      msmeRegistered,
+      rcmApplicable,
+      msmeNumber,
+      enterpriseName,
+      udyamDate: safeDate(udyamDate),
+      msmeCategory,
+      gstCertificateUrl,
+      panCardUrl,
+      msmeFileUrl,
+      coiFileUrl,
+      cancelledChequeUrl,
     }).catch(err => console.error('Admin notification email error:', err));
 
     return NextResponse.json({ success: true, id: (result as any).insertId });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Registration error:', error);
+    const message = error?.message || 'Failed to process registration';
+    if (message.includes('exceeds the 1MB limit')) {
+      return NextResponse.json({ success: false, error: message }, { status: 400 });
+    }
     return NextResponse.json({ success: false, error: 'Failed to process registration' }, { status: 500 });
   }
 }

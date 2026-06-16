@@ -24,6 +24,12 @@ interface ApiResponse {
   totalPages: number;
 }
 
+interface Toast {
+  id: string;
+  message: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+}
+
 const LIMIT = 10;
 
 /* ── Helpers ─────────────────────────────────────────────── */
@@ -45,6 +51,17 @@ export default function AdminPage() {
 
   // ── Committed search (only applied when Search button is clicked)
   const [committed, setCommitted] = useState({ company: '', pan: '', gstin: '', dateFrom: '', dateTo: '' });
+
+  // Toast notifications state
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const showToast = useCallback((message: string, type: Toast['type'] = 'info') => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4000);
+  }, []);
 
   // ── Data state
   const [vendors,    setVendors]    = useState<Vendor[]>([]);
@@ -133,7 +150,7 @@ export default function AdminPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      alert('Export failed. Please try again.');
+      showToast('Export failed. Please try again.', 'error');
     } finally {
       setExporting(false);
     }
@@ -415,6 +432,28 @@ export default function AdminPage() {
           </div>
         )}
 
+      </div>
+
+      {/* ===== TOAST NOTIFICATIONS ===== */}
+      <div className="toast-container">
+        {toasts.map((t) => (
+          <div key={t.id} className={`toast toast-${t.type}`}>
+            <span className="toast-icon">
+              {t.type === 'success' && '✅'}
+              {t.type === 'error' && '❌'}
+              {t.type === 'warning' && '⚠️'}
+              {t.type === 'info' && 'ℹ️'}
+            </span>
+            <span className="toast-message">{t.message}</span>
+            <button
+              type="button"
+              className="toast-close"
+              onClick={() => setToasts((prev) => prev.filter((toast) => toast.id !== t.id))}
+            >
+              &times;
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -9,6 +9,12 @@ import { apiUrl, BASE_PATH } from '@/lib/api-path';
    ========================================================= */
 type ScanState = 'idle' | 'scanning' | 'success' | 'error' | 'no-api';
 
+interface Toast {
+  id: string;
+  message: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+}
+
 interface SmartUploadProps {
   name: string;
   docType: 'gst' | 'pan' | 'msme';
@@ -37,6 +43,14 @@ function SmartUploadZone({
 
   const scanDocument = useCallback(
     async (file: File) => {
+      if (file.size > 1 * 1024 * 1024) {
+        setFileName('');
+        setScanState('error');
+        setScanMessage('File size exceeds the 1MB limit.');
+        onScanStatus('error', 'File size exceeds the 1MB limit.');
+        if (inputRef.current) inputRef.current.value = '';
+        return;
+      }
       setFileName(file.name);
       setScanState('scanning');
       onScanStatus('scanning');
@@ -149,7 +163,7 @@ function SmartUploadZone({
               </div>
               <div className="upload-label">{label}</div>
               <div className="upload-sublabel">
-                Drop file or click to browse · JPG, PNG, PDF, DOCX · Max 20MB
+                Drop file or click to browse · JPG, PNG, PDF, DOCX · Max 1MB
               </div>
             </>
           )}
@@ -189,6 +203,7 @@ function UploadZone({
   required?: boolean;
 }) {
   const [fileName, setFileName] = useState('');
+  const [error, setError] = useState('');
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -196,49 +211,79 @@ function UploadZone({
     e.preventDefault();
     setDragOver(false);
     const file = e.dataTransfer.files?.[0];
-    if (file && inputRef.current) {
-      const dt = new DataTransfer();
-      dt.items.add(file);
-      inputRef.current.files = dt.files;
+    if (file) {
+      if (file.size > 1 * 1024 * 1024) {
+        setError('File size exceeds the 1MB limit.');
+        setFileName('');
+        if (inputRef.current) inputRef.current.value = '';
+        return;
+      }
+      setError('');
+      if (inputRef.current) {
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        inputRef.current.files = dt.files;
+        setFileName(file.name);
+      }
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 1 * 1024 * 1024) {
+        setError('File size exceeds the 1MB limit.');
+        setFileName('');
+        if (inputRef.current) inputRef.current.value = '';
+        return;
+      }
+      setError('');
       setFileName(file.name);
     }
   };
 
   return (
-    <div
-      className={['upload-zone', dragOver ? 'drag-over' : '', fileName ? 'has-file' : ''].filter(Boolean).join(' ')}
-      onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-      onDragLeave={() => setDragOver(false)}
-      onDrop={handleDrop}
-      onClick={() => inputRef.current?.click()}
-      style={{ minHeight: '80px' }}
-    >
-      <input
-        ref={inputRef}
-        type="file"
-        name={name}
-        required={required}
-        accept="image/*,.pdf,.doc,.docx,application/pdf"
-        onChange={(e) => setFileName(e.target.files?.[0]?.name || '')}
-        style={{ display: 'none' }}
-      />
-      <div className="upload-zone-content">
-        {fileName ? (
-          <>
-            <div className="upload-icon">📎</div>
-            <div className="upload-label" style={{ fontSize: '0.8rem', wordBreak: 'break-all', maxWidth: '100%' }}>
-              {fileName}
-            </div>
-            <div className="upload-sublabel" style={{ fontSize: '0.7rem' }}>Click to replace</div>
-          </>
-        ) : (
-          <>
-            <div className="upload-icon">📁</div>
-            <div className="upload-label">{label}</div>
-            <div className="upload-sublabel">Drop file or click to browse · JPG, PNG, PDF, DOCX · Max 20MB</div>
-          </>
-        )}
+    <div>
+      <div
+        className={['upload-zone', dragOver ? 'drag-over' : '', fileName ? 'has-file' : ''].filter(Boolean).join(' ')}
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={handleDrop}
+        onClick={() => inputRef.current?.click()}
+        style={{ minHeight: '80px' }}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          name={name}
+          required={required}
+          accept="image/*,.pdf,.doc,.docx,application/pdf"
+          onChange={handleFileChange}
+          style={{ display: 'none' }}
+        />
+        <div className="upload-zone-content">
+          {fileName ? (
+            <>
+              <div className="upload-icon">📎</div>
+              <div className="upload-label" style={{ fontSize: '0.8rem', wordBreak: 'break-all', maxWidth: '100%' }}>
+                {fileName}
+              </div>
+              <div className="upload-sublabel" style={{ fontSize: '0.7rem' }}>Click to replace</div>
+            </>
+          ) : (
+            <>
+              <div className="upload-icon">📁</div>
+              <div className="upload-label">{label}</div>
+              <div className="upload-sublabel">Drop file or click to browse · JPG, PNG, PDF, DOCX · Max 1MB</div>
+            </>
+          )}
+        </div>
       </div>
+      {error && (
+        <div className="scan-warn-banner" style={{ marginTop: '0.5rem' }}>
+          ⚠️ {error}
+        </div>
+      )}
     </div>
   );
 }
@@ -257,6 +302,32 @@ const INDIAN_STATES = [
 ];
 
 /* =========================================================
+   FOCUS & SCROLL UTILITY
+   ========================================================= */
+const focusAndScrollToElement = (element: HTMLElement) => {
+  if (!element) return;
+
+  // Handle hidden file inputs inside upload zones
+  if (element.tagName === 'INPUT' && (element as HTMLInputElement).type === 'file') {
+    const uploadZone = element.closest('.upload-zone') as HTMLElement;
+    if (uploadZone) {
+      uploadZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Temporarily highlight the border to attract user attention
+      uploadZone.style.borderColor = '#dc2626'; // Red
+      uploadZone.style.boxShadow = '0 0 0 4px rgba(220, 38, 38, 0.15)';
+      setTimeout(() => {
+        uploadZone.style.borderColor = '';
+        uploadZone.style.boxShadow = '';
+      }, 3000);
+      return;
+    }
+  }
+
+  element.focus();
+  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
+
+/* =========================================================
    MAIN PAGE
    ========================================================= */
 export default function VendorRegistration() {
@@ -266,6 +337,17 @@ export default function VendorRegistration() {
   const [hasPanCard, setHasPanCard] = useState('yes');
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // Toast Notifications state
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const showToast = useCallback((message: string, type: Toast['type'] = 'info') => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4000);
+  }, []);
 
   // Email OTP state
   const [emailValue, setEmailValue] = useState('');
@@ -305,6 +387,7 @@ export default function VendorRegistration() {
     enterpriseName: useRef<HTMLInputElement>(null),
     udyamDate: useRef<HTMLInputElement>(null),
     msmeCategory: useRef<HTMLSelectElement>(null),
+    emailAddress: useRef<HTMLInputElement>(null),
   };
 
   const fillField = (ref: React.RefObject<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null>, value: string) => {
@@ -454,11 +537,28 @@ export default function VendorRegistration() {
     }
   };
 
+  const handleInvalid = (e: React.BaseSyntheticEvent) => {
+    const element = e.target as HTMLElement;
+
+    // Prevent default browser tooltip for hidden file inputs
+    if (element.tagName === 'INPUT' && (element as HTMLInputElement).type === 'file') {
+      e.preventDefault();
+    }
+
+    const form = element.closest('form');
+    if (form) {
+      const firstInvalid = form.querySelector(':invalid') as HTMLElement;
+      if (firstInvalid) {
+        focusAndScrollToElement(firstInvalid);
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!emailVerified) {
-      alert('⚠️ Please verify your email address before submitting.');
+      showToast('Please verify your email address before submitting.', 'warning');
       return;
     }
 
@@ -478,11 +578,11 @@ export default function VendorRegistration() {
         // Show attractive success modal instead of alert
         setShowSuccessModal(true);
       } else {
-        alert('Registration failed: ' + (data.error || 'Unknown error'));
+        showToast('Registration failed: ' + (data.error || 'Unknown error'), 'error');
       }
     } catch (err) {
       console.error(err);
-      alert('An error occurred during submission. Please try again.');
+      showToast('An error occurred during submission. Please try again.', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -538,7 +638,11 @@ export default function VendorRegistration() {
 
       {/* ===== FORM ===== */}
       <main className="page-content">
-        <form onSubmit={handleSubmit} className={`animate-fade-in ${hasAttemptedSubmit ? 'was-validated' : ''}`}>
+        <form 
+          onSubmit={handleSubmit} 
+          onInvalidCapture={handleInvalid}
+          className={`animate-fade-in ${hasAttemptedSubmit ? 'was-validated' : ''}`}
+        >
           <div className="card">
 
             {/* ── SECTION 1: GST VERIFICATION ── */}
@@ -700,10 +804,16 @@ export default function VendorRegistration() {
                   <div className="form-group">
                     <label className="form-label">Company Website</label>
                     <input
-                      type="url"
+                      type="text"
                       name="companyWebsite"
                       className="form-control"
                       placeholder="https://yourcompany.com"
+                      onBlur={(e) => {
+                        let val = e.target.value.trim();
+                        if (val && !/^https?:\/\//i.test(val)) {
+                          e.target.value = 'https://' + val;
+                        }
+                      }}
                     />
                   </div>
                 </div>
@@ -759,6 +869,7 @@ export default function VendorRegistration() {
                       {/* Email input + Send OTP / Verified badge */}
                       <div className="email-input-row">
                         <input
+                          ref={refs.emailAddress}
                           type="email"
                           name="emailAddress"
                           className="form-control"
@@ -1133,7 +1244,17 @@ export default function VendorRegistration() {
                 style={{ minWidth: '240px', fontSize: '1rem' }}
                 disabled={isSubmitting}
                 id="submit-registration-btn"
-                onClick={() => setHasAttemptedSubmit(true)}
+                onClick={(e) => {
+                  setHasAttemptedSubmit(true);
+                  if (!emailVerified) {
+                    e.preventDefault();
+                    showToast('Please verify your email address before submitting.', 'warning');
+                    if (refs.emailAddress.current) {
+                      refs.emailAddress.current.focus();
+                      refs.emailAddress.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                  }
+                }}
               >
                 {isSubmitting ? (
                   <>
@@ -1175,6 +1296,28 @@ export default function VendorRegistration() {
           </div>
         </div>
       )}
+
+      {/* ===== TOAST NOTIFICATIONS ===== */}
+      <div className="toast-container">
+        {toasts.map((t) => (
+          <div key={t.id} className={`toast toast-${t.type}`}>
+            <span className="toast-icon">
+              {t.type === 'success' && '✅'}
+              {t.type === 'error' && '❌'}
+              {t.type === 'warning' && '⚠️'}
+              {t.type === 'info' && 'ℹ️'}
+            </span>
+            <span className="toast-message">{t.message}</span>
+            <button
+              type="button"
+              className="toast-close"
+              onClick={() => setToasts((prev) => prev.filter((toast) => toast.id !== t.id))}
+            >
+              &times;
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
