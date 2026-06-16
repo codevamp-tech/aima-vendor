@@ -12,6 +12,7 @@ jobs:
       - name: Pull latest code
         shell: powershell
         run: |
+          git config --global --add safe.directory D:/html/users/userweb8/Html/account/aima-vendor
           cd D:\html\users\userweb8\Html\account\aima-vendor
           git pull origin master
 
