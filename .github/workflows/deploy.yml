@@ -33,3 +33,28 @@ jobs:
         run: |
           cd /d D:\html\users\userweb8\Html\account\aima-vendor
           npx pm2 describe vendor-portal >nul 2>&1 && npx pm2 restart vendor-portal || npx pm2 start start.js --name vendor-portal
+
+      - name: Run Diagnostics
+        shell: powershell
+        run: |
+          Write-Host "=== PM2 Status ==="
+          npx pm2 list
+          
+          Write-Host "=== PM2 Error Logs (Last 50 lines) ==="
+          $errPath = "C:\Users\aima_usr\.pm2\logs\vendor-portal-error.log"
+          if (Test-Path $errPath) {
+              Get-Content -Path $errPath -Tail 50
+          } else {
+              Write-Host "No error log found at $errPath"
+          }
+          
+          Write-Host "=== PM2 Out Logs (Last 50 lines) ==="
+          $outPath = "C:\Users\aima_usr\.pm2\logs\vendor-portal-out.log"
+          if (Test-Path $outPath) {
+              Get-Content -Path $outPath -Tail 50
+          } else {
+              Write-Host "No out log found at $outPath"
+          }
+
+          Write-Host "=== Listening Ports ==="
+          netstat -ano | findstr LISTENING
