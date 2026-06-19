@@ -32,9 +32,4 @@ jobs:
         shell: cmd
         run: |
           cd /d D:\html\users\userweb8\Html\account\aima-vendor
-          npx pm2 describe vendor-portal >nul 2>&1
-          if %ERRORLEVEL% EQU 0 (
-              npx pm2 restart vendor-portal
-          ) else (
-              npx pm2 start start.js --name vendor-portal
-          )
+          npx pm2 describe vendor-portal >nul 2>&1 && npx pm2 restart vendor-portal || npx pm2 start start.js --name vendor-portal
