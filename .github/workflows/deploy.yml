@@ -32,4 +32,9 @@ jobs:
         shell: powershell
         run: |
           cd D:\html\users\userweb8\Html\account\aima-vendor
-          npx pm2 restart vendor-portal
+          $null = npx pm2 describe vendor-portal 2>$null
+          if ($LASTEXITCODE -eq 0) {
+              npx pm2 restart vendor-portal
+          } else {
+              npx pm2 start start.js --name vendor-portal
+          }
