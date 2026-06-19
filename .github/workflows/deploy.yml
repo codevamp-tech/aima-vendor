@@ -56,5 +56,32 @@ jobs:
               Write-Host "No out log found at $outPath"
           }
 
-          Write-Host "=== Listening Ports ==="
-          netstat -ano | findstr LISTENING
+          Write-Host "=== Process Listening on Port 3000 ==="
+          $connection = Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue
+          if ($connection) {
+              $pidVal = $connection[0].OwningProcess
+              Write-Host "PID listening on port 3000: $pidVal"
+              Get-Process -Id $pidVal | Format-List Path, Name, Id
+          } else {
+              Write-Host "No process found listening on port 3000"
+          }
+
+          Write-Host "=== HTTP Test (localhost:3000/account) ==="
+          try {
+              $resp = Invoke-WebRequest -Uri "http://localhost:3000/account" -UseBasicParsing -TimeoutSec 10
+              Write-Host "Status Code: $($resp.StatusCode)"
+              Write-Host "Response preview: $($resp.Content.Substring(0, [Math]::Min(200, $resp.Content.Length)))"
+          } catch {
+              Write-Host "Failed to request http://localhost:3000/account"
+              Write-Host $_.Exception.Message
+          }
+
+          Write-Host "=== HTTP Test (localhost:3000/account/admin/login) ==="
+          try {
+              $resp = Invoke-WebRequest -Uri "http://localhost:3000/account/admin/login" -UseBasicParsing -TimeoutSec 10
+              Write-Host "Status Code: $($resp.StatusCode)"
+              Write-Host "Response preview: $($resp.Content.Substring(0, [Math]::Min(200, $resp.Content.Length)))"
+          } catch {
+              Write-Host "Failed to request http://localhost:3000/account/admin/login"
+              Write-Host $_.Exception.Message
+          }
